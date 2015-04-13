@@ -1,0 +1,392 @@
+CONTROL STRUCTURES
+
+*** IF ***
+
+if (condition) {
+	stuff
+} else {
+	other stuff
+}
+
+
+if (condition) {
+	stuff
+} elseif (condition2){
+	other stuff
+} else {
+	yet other stuff
+}
+
+
+y <- if(x>3) {
+	10
+} else {
+	20
+}
+
+above is valid substitute for:
+if (x>3) {
+	y=10
+} else {
+	y=20
+}
+
+
+else clause is not necessary:
+if (condition) {
+	stuff
+}
+
+*** FOR ***
+
+for (i in 1:10) {
+	do stuff[i]
+}
+
+
+these 3 loops do the same thing:
+x <- c("a", "b", "c", "d")
+for (i in 1:4){
+	print(x[i])
+}
+
+for (i in seq_along(x)) {
+	print(x[i])
+}
+
+for(letter in x) {
+	print (letter)
+}
+
+
+*** NESTED FOR LOOPS ***
+
+x <- matrix (1:6, 2, 3)
+for (i in seq_len(nrow(x))) {
+	for (j in seq_len(ncol(x))) {
+		print(x[i, j])
+	}
+}
+
+
+*** WHILE LOOPS ***
+test a condition, then execute loop while condition is true
+count <- 0
+while(count < 10) {
+	print(count)
+	count <- count + 1
+}
+
+need to have the condition eventually not be true, or loop repeats infinitely
+
+sometimes there will be more than one condition in the test:
+z <- 5
+while(z >= 3 && z <= 10) {
+	print(z)
+	coin <- rbinom(1, 1, 0.5)
+
+	if (coin==1) { # random walk
+		z <- z + 1
+	} else {
+		z <- z - 1
+	}
+}
+
+conditions are always evaluated left to right
+
+*** REPEAT, NEXT, BREAK ***
+
+REPEAT
+
+repeat initiates an infinite loop
+the only way to exit a repeat loop is to use break
+x0 <- 1
+tol <- 1e-8
+
+repeat {
+	x1 <- computeEstimate()
+
+	if abs((x1-x0) < tol {
+		break
+	} else {
+		x0 <- x1
+	}
+}
+
+not used a lot, but can be useful for maximization functions
+
+NEXT
+
+next is used to skip an iteration of a loop
+
+for(i in 1:100) {
+	if(i <= 20) {
+		# skip next 20 iterations
+		next
+	}
+	# do some other stuff here
+}
+
+
+RETURN
+
+return signals that a function should exit and return a given value
+
+control structures like those mentioned above are good for writing programs, but for command-line work it's best to rely on *apply functions as far as R is concerned
+
+*** FUNCTIONS ***
+
+functions are R objects of class "function"
+functions are first class objects, meaning they can be treated like other R objects
+	* functions can be passed as arguments to other functions.
+	* functions can be nested, so that you can define a function inside another function.
+	* the return value of a function is the last expression in the function body to be evaluated.	
+
+ARGUMENTS
+
+functions have named arguments which potentially have default values
+	* the formal arguments are the arguments included in the function definition
+	* the formals function returns a list of all the formal arguments of a function
+	* not every function call in R makes use of all the formal arguments
+	* function arguments can be missing or might have default values
+
+functions can be matched positionally or by name
+the following calls are equivalent
+	* mydata <- rnorm(100)
+	* sd(mydata)
+	* sd(x = mydata)
+	* sd(x = mydata, na.rm=FALSE)
+	* sd(na.rm=FALSE, x=mydata)
+	* sd(na.rm=FALSE, mydata)
+
+mix of positional matching and matching by name
+
+function arguments can be partially matched
+	* type part of the argument name then see if R figures it out
+order of operations:
+	* check for an exact match for a named argument
+	* check for a partial match
+	* check for a positional match
+
+function arguments can be set to NULL
+
+LAZY EVALUATION
+*arguments to a function are only evaluated as they are needed
+error gets thrown after rest of function returns values
+
+
+"..." ARGUMENT
+indicates a variable number of arguments that are usually passed on to other functions
+
+... is often used when extending another function and you don't want to copy the whole argument list of the function
+
+* generic functions use ... so that extra arguments can be passed to methods (OOP)
+
+* also necessary when the nnumber of arguments to be passed to a function can't be known in advnce
+
+args(paste) # returns function (..., sep=" ", collapse= NULL)
+args(cat) # returns function (..., file="", sep=" ", fill=FALSE, labels=NULL, append=FALSE)
+
+* arguments that appear after ... on the argument list must be named explicitly and cannot be partially matched.
+
+SCOPING RULES
+* how does R know which value to assign to which symbol?
+* R searches through environments
+* global (workspace) -> namespace of packages on the search list (base package being the last one)
+* orer of packages on the search list matters!
+* users can alter search list, cannot assume there will be a set list of functions available
+* when user loads package, it moves to #2 on search list
+* R has separate namespaces for functions and non-functions so it's possible to have an object named c and a function named c
+
+Scoping Rules
+* main feature that makes R different from S
+* R uses lexical scoping (or, static scoping)
+* alternative to dynamic scoping
+* Related to the cscoping rules is hhow R uses  the search list to bind a value tto a symbol
+* Lexical scoping turns out to be particularly useful for simplyfing statistical computations
+
+consider this function:
+f <- function (x, y) {
+	x^2 + y / z
+}
+
+* in this case z is a free variable
+* the scoping rules of a language determine how values are assigned to free variables.
+* free variables are not formal arguments and are not local variables (assigned inside function body)
+
+Lexical Scoping in R means that:
+* the values of free variables are searched for in the environment in which the  function was defined.
+
+ENVIRONMENT
+* an environment is a collection of (symbol, value) pairs, i.e. x is a symbol and 3.14 might be its value
+* every environment has a parent environment
+* it is possible for an environment to have multiple "children"
+* the only environment without a parent environment is the empty environment
+* a function + an environment = a closure, or, function closure
+* closures are key to some of the more interesting parts of R
+
+Searching for a value for a free variable
+* values are searched for in environments parent(s), then top-level, then down search list, then will hit empty environment and throw an error
+
+Why does this matter?
+* typically a function is defined in the global environment, so the values of variables ar efound in users' workspaces
+
+* but: in R, functions can be defined inside of other functions (unlike, say, C).
+
+* so what about whenthe environment in which a function was defined is the body of another function?
+
+example:
+make.power <-- function(n) {
+	pow <- function(x) {
+		x^n
+	}
+	pow
+}
+
+* this function returns another function as its value
+cube <- make.power(3)
+square <- make.power(2)	
+cube(3) # returns 27
+square(3) # returns 9
+
+# * ^^^ Function that creates a function!!!
+
+EXPLORING A FUNCTION CLOSURE
+
+* i.e. What's in a function's environment?
+
+* ls(environment(cube))
+[1] "n", "pow"
+* get("n", environment(cube))
+[1] 3
+* ls(environment(square))
+[1] "n", "pow"
+* get("n", environment(square))
+[1] 2
+
+
+LEXICAL VS DYNAMIC SCOPING
+y <- 10
+f <- function(x) {
+	y <- 2
+	y^2 + g(x)
+}
+g <- function(x) {
+	x*y
+}
+
+* what will be the value of f(3) ?
+* what will be the value of g(3) ?
+f(3) # returns 4 + g(x), i.e. 34
+
+Lexical: the value of y in function g is looked up in the environment
+in which the function was defined, in this case the global environment.
+* value of y is 10
+
+Dynamic: the value of y is looked up in the environment from which the
+function was called (sometimes known as the calling environment).
+	* in R the calling environment is known as the parent frame
+	* value of y would be 2
+
+* when a function is defined in the global environment, and subsequently called
+from the global environment, then the defining environment and the calling 
+environment are the same.
+	* this can give the appearance of dynamic scoping
+
+* Other languages that cupport lexical scoping
+	*Scheme, Perl, Python, Common Lisp
+
+CONSEQUENCES OF LEXICAL SCOPING
+
+* in R, all objects must be stored in memory
+* all functions must carry a pointer  to their respective 
+  defining environments, which could be anywhere
+* in S-PLUS, free variables are always looked up in the 
+  global workspace, so everything can be stored on the disk
+  because the "defining environment" of all functions is the same.
+
+APPLICATION: OPTIMIZATION
+
+* optimization routines in R (optim, nlm, optimize, etc) require you to pass a function
+whose argument is a vector of parameters (eg log-likelihood)
+* however, an object function might depend on other things beside parameters (like data)
+* when writing software that does optimization, it may be desirable to allow the user to 
+hold certain parameters fixed
+
+*** Maximizing a Normal Likelihood ***
+# return to this some other time
+
+
+CODING STANDARDS IN R
+* write code in text editor, save as .txt
+* indent your code
+* limit the width of your code (80 columns?) set margin column in Preferences (RStudio)
+* ctrl-i to indent
+* set indent to 8 spaces
+* limit the length of your functions 
+* limit function to one basic activity
+* i.e. readData() should just read the data
+* splitting up functions can help with debugging
+
+
+DATES AND TIMES IN R
+* dates are represented by the Date class
+* times represented by either the POSIXct or the POSIXlt class
+* dates are stored internally as the number of days since 1970-01-01
+* times are stored internally as the number of seconds since 1970-01-01
+* dates can be coerced from a character string using the as.Date() function
+x <- as.Date("1970-01-01")
+
+* POSIXct is just a large integer under the hood, useful when you want to store
+times in something like a data frame
+* POSIXlt is a list underneath and stores other information (day of week, day of month,
+day of year, month)
+* Generic functions that work on dates and times
+	* weekdays : give the day of the week
+	* months: give the month name
+	* quarters: give the quarter number ("Q1", "Q2", "Q3", "Q4")
+* times can be coerced from a character string using as.POSIXct or as.POSIXlt
+* POSIXct will often need to be converted to POSIXlt
+	* x <- Sys.time() # already in POSIXct
+	* p <- as.POSIXlt(x)
+	* x # returns [1] "2013-04-24 22:04:14 EST"
+	* unclass(x) # returns [1] 1342449849 i.e. some number of seconds since 1/1/1970
+	* x$sec # returns error
+	* p$sec # returns [1] 14.37 (fractional time)
+* strptime()
+	* converts dates that are written in character string format into date or time
+	  objects
+	* uses format strings
+	datestring <- c("January 10, 2012 10:40", "December 9, 2011 9:10")
+	x <- strptime(datestring, "%B %d, %Y %H:%M")
+	x # returns [1] "2012-01-10 10:40:00 EST", "2011-12-09 9:10:00 EST")
+	class(x) # returns [1] "POSIXlt", "POSIXt"
+	
+	* check ?strptime for formatting string details
+
+OPERATIONS ON DATES AND TIMES
+
+* operations + and - can be used on dates and times
+* comparison operators (==, <=, >=, etc) can be used as well
+x <- as.Date("2012-01-01")
+y <- strptime("9 Jan 2011 11:34:21", "%d %b %Y %H:%M:%S")
+x-y # returns errors
+x <- as.POSIXlt(x)
+x-y # returns Time difference of 356.3 days
+
+* date and time operations can keep track of leap years, leap seconds,
+daylight savings, and time zones
+x <- as.Date("2012-03-01")
+y <- as.Date("2012-02-28")
+x-y # returns Time difference of 2 days
+x <- as.POSIXct("2012-10-25 01:00:00")
+y <- as.POSIXct("2012-10-25 06:00:00", tz="GMT") #Greenwich Mean Time
+y-x # returns Time difference of 1 hours #(sic)
+
+* note: many plotting functions will recognize D/T objects
+and format the x-axis in a special way so it will have a time oriented element to it
+
+
+
+ 		
+
